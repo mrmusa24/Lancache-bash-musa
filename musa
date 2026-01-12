@@ -1,0 +1,81 @@
+1️⃣ Update and Install Dependencies
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y docker.io docker-compose git curl vim
+sudo systemctl enable --now docker
+
+
+Check Docker is running:
+
+docker --version
+docker-compose --version
+
+2️⃣ Add a Non-Root User to Docker (Optional)
+
+If you don’t want to run sudo with every Docker command:
+
+sudo usermod -aG docker $USER
+newgrp docker
+
+3️⃣ Create a Folder for Lancache
+mkdir -p ~/lancache
+cd ~/lancache
+
+4️⃣ Set Up Docker Compose
+
+Create docker-compose.yml:
+
+version: '2'
+
+services:
+  dns:
+    image: lancachenet/lancache-dns:latest
+    container_name: lancache-dns
+    restart: unless-stopped
+    ports:
+      - "53:53/udp"
+    environment:
+      USE_GENERIC_CACHE: "true"
+      UPSTREAM_DNS: "8.8.8.8"
+      LANCACHE_IP: "10.179.156.10"  # Your server IP
+
+  cache:
+    image: lancachenet/monolithic:latest
+    container_name: lancache
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CACHE_MEM_SIZE: "8G"
+      CACHE_DISK_SIZE: "200G"
+      LANCACHE_IP: "10.179.156.10"
+      UPSTREAM_DNS: "8.8.8.8"
+
+
+✅ Note: Replace 10.179.156.10 with your actual server IP.
+
+5️⃣ Launch Lancache
+docker-compose up -d
+
+
+Check logs to confirm:
+
+docker-compose logs -f
+
+6️⃣ Configure Your Network / Client Machines
+
+Point your client devices or router DNS to 10.179.156.10.
+
+Lancache DNS will automatically redirect known game/content domains to itself for caching.
+
+7️⃣ Verify Caching
+
+Test with a known game or software update (Steam, Epic, Blizzard, Microsoft, etc.).
+
+Check the container logs:
+
+docker logs lancache -f
+docker logs lancache-dns -f
+
+
+You should see hits/misses in the logs as clients download content.
